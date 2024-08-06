@@ -130,25 +130,25 @@ namespace detail {
 
 // make sure this is not inlined as it is slow and dramatically enlarges code, thus making other
 // inlinings more difficult. Throws are also generally the slow path.
-[[noreturn]] inline ANKERL_UNORDERED_DENSE_NOINLINE void on_error_key_not_found() {
+[[noreturn]] inline ANKERL_UNORDERED_DENSE_NOINLINE  constexpr void   on_error_key_not_found() {
     throw std::out_of_range("ankerl::unordered_dense::map::at(): key not found");
 }
-[[noreturn]] inline ANKERL_UNORDERED_DENSE_NOINLINE void on_error_bucket_overflow() {
+[[noreturn]] inline ANKERL_UNORDERED_DENSE_NOINLINE  constexpr void   on_error_bucket_overflow() {
     throw std::overflow_error("ankerl::unordered_dense: reached max bucket size, cannot increase size");
 }
-[[noreturn]] inline ANKERL_UNORDERED_DENSE_NOINLINE void on_error_too_many_elements() {
+[[noreturn]] inline ANKERL_UNORDERED_DENSE_NOINLINE  constexpr void   on_error_too_many_elements() {
     throw std::out_of_range("ankerl::unordered_dense::map::replace(): too many elements");
 }
 
 #    else
 
-[[noreturn]] inline void on_error_key_not_found() {
+[[noreturn]] inline  constexpr void  on_error_key_not_found() {
     abort();
 }
-[[noreturn]] inline void on_error_bucket_overflow() {
+[[noreturn]] inline  constexpr void   on_error_bucket_overflow() {
     abort();
 }
-[[noreturn]] inline void on_error_too_many_elements() {
+[[noreturn]] inline  constexpr void   on_error_too_many_elements() {
     abort();
 }
 
@@ -163,7 +163,7 @@ namespace detail {
 // hardcodes seed and the secret, reformats the code, and clang-tidy fixes.
 namespace detail::wyhash {
 
-inline void mum(uint64_t* a, uint64_t* b) {
+inline  constexpr void  mum(uint64_t* a, uint64_t* b) {
 #    if defined(__SIZEOF_INT128__)
     __uint128_t r = *a;
     r *= *b;
@@ -193,30 +193,30 @@ inline void mum(uint64_t* a, uint64_t* b) {
 }
 
 // multiply and xor mix function, aka MUM
-[[nodiscard]] inline auto mix(uint64_t a, uint64_t b) -> uint64_t {
+[[nodiscard]] inline  constexpr auto   mix(uint64_t a, uint64_t b) -> uint64_t {
     mum(&a, &b);
     return a ^ b;
 }
 
 // read functions. WARNING: we don't care about endianness, so results are different on big endian!
-[[nodiscard]] inline auto r8(const uint8_t* p) -> uint64_t {
+[[nodiscard]] inline  constexpr auto   r8(const uint8_t* p) -> uint64_t {
     uint64_t v{};
     std::memcpy(&v, p, 8U);
     return v;
 }
 
-[[nodiscard]] inline auto r4(const uint8_t* p) -> uint64_t {
+[[nodiscard]] inline  constexpr auto   r4(const uint8_t* p) -> uint64_t {
     uint32_t v{};
     std::memcpy(&v, p, 4);
     return v;
 }
 
 // reads 1, 2, or 3 bytes
-[[nodiscard]] inline auto r3(const uint8_t* p, size_t k) -> uint64_t {
+[[nodiscard]] inline  constexpr auto  r3(const uint8_t* p, size_t k) -> uint64_t {
     return (static_cast<uint64_t>(p[0]) << 16U) | (static_cast<uint64_t>(p[k >> 1U]) << 8U) | p[k - 1];
 }
 
-[[maybe_unused]] [[nodiscard]] inline auto hash(void const* key, size_t len) -> uint64_t {
+[[maybe_unused]] [[nodiscard]] inline  constexpr auto  hash(void const* key, size_t len) -> uint64_t {
     static constexpr auto secret = std::array{UINT64_C(0xa0761d6478bd642f),
                                               UINT64_C(0xe7037ed1a0b428db),
                                               UINT64_C(0x8ebc6af09c88c6e3),
@@ -263,7 +263,7 @@ inline void mum(uint64_t* a, uint64_t* b) {
     return mix(secret[1] ^ len, mix(a ^ secret[1], b ^ seed));
 }
 
-[[nodiscard]] inline auto hash(uint64_t x) -> uint64_t {
+[[nodiscard]] inline  constexpr auto  hash(uint64_t x) -> uint64_t {
     return detail::wyhash::mix(x, UINT64_C(0x9E3779B97F4A7C15));
 }
 
@@ -271,7 +271,7 @@ inline void mum(uint64_t* a, uint64_t* b) {
 
 ANKERL_UNORDERED_DENSE_EXPORT template <typename T, typename Enable = void>
 struct hash {
-    auto operator()(T const& obj) const noexcept(noexcept(std::declval<std::hash<T>>().operator()(std::declval<T const&>())))
+     constexpr auto  operator()(T const& obj) const noexcept(noexcept(std::declval<std::hash<T>>().operator()(std::declval<T const&>())))
         -> uint64_t {
         return std::hash<T>{}(obj);
     }
@@ -280,7 +280,7 @@ struct hash {
 template <typename CharT>
 struct hash<std::basic_string<CharT>> {
     using is_avalanching = void;
-    auto operator()(std::basic_string<CharT> const& str) const noexcept -> uint64_t {
+     constexpr auto  operator()(std::basic_string<CharT> const& str) const noexcept -> uint64_t {
         return detail::wyhash::hash(str.data(), sizeof(CharT) * str.size());
     }
 };
@@ -288,7 +288,7 @@ struct hash<std::basic_string<CharT>> {
 template <typename CharT>
 struct hash<std::basic_string_view<CharT>> {
     using is_avalanching = void;
-    auto operator()(std::basic_string_view<CharT> const& sv) const noexcept -> uint64_t {
+     constexpr auto  operator()(std::basic_string_view<CharT> const& sv) const noexcept -> uint64_t {
         return detail::wyhash::hash(sv.data(), sizeof(CharT) * sv.size());
     }
 };
@@ -296,7 +296,7 @@ struct hash<std::basic_string_view<CharT>> {
 template <class T>
 struct hash<T*> {
     using is_avalanching = void;
-    auto operator()(T* ptr) const noexcept -> uint64_t {
+     constexpr auto  operator()(T* ptr) const noexcept -> uint64_t {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return detail::wyhash::hash(reinterpret_cast<uintptr_t>(ptr));
     }
@@ -305,7 +305,7 @@ struct hash<T*> {
 template <class T>
 struct hash<std::unique_ptr<T>> {
     using is_avalanching = void;
-    auto operator()(std::unique_ptr<T> const& ptr) const noexcept -> uint64_t {
+     constexpr auto  operator()(std::unique_ptr<T> const& ptr) const noexcept -> uint64_t {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return detail::wyhash::hash(reinterpret_cast<uintptr_t>(ptr.get()));
     }
@@ -314,7 +314,7 @@ struct hash<std::unique_ptr<T>> {
 template <class T>
 struct hash<std::shared_ptr<T>> {
     using is_avalanching = void;
-    auto operator()(std::shared_ptr<T> const& ptr) const noexcept -> uint64_t {
+     constexpr auto  operator()(std::shared_ptr<T> const& ptr) const noexcept -> uint64_t {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
         return detail::wyhash::hash(reinterpret_cast<uintptr_t>(ptr.get()));
     }
@@ -323,7 +323,7 @@ struct hash<std::shared_ptr<T>> {
 template <typename Enum>
 struct hash<Enum, typename std::enable_if<std::is_enum<Enum>::value>::type> {
     using is_avalanching = void;
-    auto operator()(Enum e) const noexcept -> uint64_t {
+     constexpr auto  operator()(Enum e) const noexcept -> uint64_t {
         using underlying = typename std::underlying_type_t<Enum>;
         return detail::wyhash::hash(static_cast<underlying>(e));
     }
@@ -334,7 +334,7 @@ struct tuple_hash_helper {
     // Converts the value into 64bit. If it is an integral type, just cast it. Mixing is doing the rest.
     // If it isn't an integral we need to hash it.
     template <typename Arg>
-    [[nodiscard]] constexpr static auto to64(Arg const& arg) -> uint64_t {
+    [[nodiscard]] constexpr static  constexpr auto  to64(Arg const& arg) -> uint64_t {
         if constexpr (std::is_integral_v<Arg> || std::is_enum_v<Arg>) {
             return static_cast<uint64_t>(arg);
         } else {
@@ -342,7 +342,7 @@ struct tuple_hash_helper {
         }
     }
 
-    [[nodiscard]] static auto mix64(uint64_t state, uint64_t v) -> uint64_t {
+    [[nodiscard]] static  constexpr auto  mix64(uint64_t state, uint64_t v) -> uint64_t {
         return detail::wyhash::mix(state + v, uint64_t{0x9ddfea08eb382d69});
     }
 
@@ -350,7 +350,7 @@ struct tuple_hash_helper {
     // not, we hash the object and use this for the array. Size of the array is known at compile time, and memcpy is optimized
     // away, so filling the buffer is highly efficient. Finally, call wyhash with this buffer.
     template <typename T, std::size_t... Idx>
-    [[nodiscard]] static auto calc_hash(T const& t, std::index_sequence<Idx...>) noexcept -> uint64_t {
+    [[nodiscard]] static  constexpr auto  calc_hash(T const& t, std::index_sequence<Idx...>) noexcept -> uint64_t {
         auto h = uint64_t{};
         ((h = mix64(h, to64(std::get<Idx>(t)))), ...);
         return h;
@@ -360,7 +360,7 @@ struct tuple_hash_helper {
 template <typename... Args>
 struct hash<std::tuple<Args...>> : tuple_hash_helper<Args...> {
     using is_avalanching = void;
-    auto operator()(std::tuple<Args...> const& t) const noexcept -> uint64_t {
+     constexpr auto  operator()(std::tuple<Args...> const& t) const noexcept -> uint64_t {
         return tuple_hash_helper<Args...>::calc_hash(t, std::index_sequence_for<Args...>{});
     }
 };
@@ -368,7 +368,7 @@ struct hash<std::tuple<Args...>> : tuple_hash_helper<Args...> {
 template <typename A, typename B>
 struct hash<std::pair<A, B>> : tuple_hash_helper<A, B> {
     using is_avalanching = void;
-    auto operator()(std::pair<A, B> const& t) const noexcept -> uint64_t {
+     constexpr auto  operator()(std::pair<A, B> const& t) const noexcept -> uint64_t {
         return tuple_hash_helper<A, B>::calc_hash(t, std::index_sequence_for<A, B>{});
     }
 };
@@ -378,7 +378,7 @@ struct hash<std::pair<A, B>> : tuple_hash_helper<A, B> {
         template <>                                                      \
         struct hash<T> {                                                 \
             using is_avalanching = void;                                 \
-            auto operator()(T const& obj) const noexcept -> uint64_t {   \
+             constexpr auto  operator()(T const& obj) const noexcept -> uint64_t {   \
                 return detail::wyhash::hash(static_cast<uint64_t>(obj)); \
             }                                                            \
         }
@@ -522,7 +522,7 @@ private:
     size_t m_size{};
 
     // Calculates the maximum number for x in  (s << x) <= max_val
-    static constexpr auto num_bits_closest(size_t max_val, size_t s) -> size_t {
+    static constexpr auto  num_bits_closest(size_t max_val, size_t s) -> size_t {
         auto f = size_t{0};
         while (s << (f + 1) <= max_val) {
             ++f;
@@ -607,14 +607,14 @@ private:
     };
 
     // slow path: need to allocate a new segment every once in a while
-    void increase_capacity() {
+     constexpr void  increase_capacity() {
         auto ba = Allocator(m_blocks.get_allocator());
         pointer block = std::allocator_traits<Allocator>::allocate(ba, num_elements_in_block);
         m_blocks.push_back(block);
     }
 
     // Moves everything from other
-    void append_everything_from(segmented_vector&& other) {
+     constexpr void  append_everything_from(segmented_vector&& other) {
         reserve(size() + other.size());
         for (auto&& o : other) {
             emplace_back(std::move(o));
@@ -622,21 +622,21 @@ private:
     }
 
     // Copies everything from other
-    void append_everything_from(segmented_vector const& other) {
+     constexpr void  append_everything_from(segmented_vector const& other) {
         reserve(size() + other.size());
         for (auto const& o : other) {
             emplace_back(o);
         }
     }
 
-    void dealloc() {
+     constexpr void  dealloc() {
         auto ba = Allocator(m_blocks.get_allocator());
         for (auto ptr : m_blocks) {
             std::allocator_traits<Allocator>::deallocate(ba, ptr, num_elements_in_block);
         }
     }
 
-    [[nodiscard]] static constexpr auto calc_num_blocks_for_capacity(size_t capacity) {
+    [[nodiscard]] static constexpr auto  calc_num_blocks_for_capacity(size_t capacity) {
         return (capacity + num_elements_in_block - 1U) / num_elements_in_block;
     }
 
@@ -692,72 +692,72 @@ public:
         dealloc();
     }
 
-    [[nodiscard]] constexpr auto size() const -> size_t {
+    [[nodiscard]] constexpr auto  size() const -> size_t {
         return m_size;
     }
 
-    [[nodiscard]] constexpr auto capacity() const -> size_t {
+    [[nodiscard]] constexpr auto  capacity() const -> size_t {
         return m_blocks.size() * num_elements_in_block;
     }
 
     // Indexing is highly performance critical
-    [[nodiscard]] constexpr auto operator[](size_t i) const noexcept -> T const& {
+    [[nodiscard]] constexpr auto  operator[](size_t i) const noexcept -> T const& {
         return m_blocks[i >> num_bits][i & mask];
     }
 
-    [[nodiscard]] constexpr auto operator[](size_t i) noexcept -> T& {
+    [[nodiscard]] constexpr auto  operator[](size_t i) noexcept -> T& {
         return m_blocks[i >> num_bits][i & mask];
     }
 
-    [[nodiscard]] constexpr auto begin() -> iterator {
+    [[nodiscard]] constexpr auto  begin() -> iterator {
         return {m_blocks.data(), 0U};
     }
-    [[nodiscard]] constexpr auto begin() const -> const_iterator {
+    [[nodiscard]] constexpr auto  begin() const -> const_iterator {
         return {m_blocks.data(), 0U};
     }
-    [[nodiscard]] constexpr auto cbegin() const -> const_iterator {
+    [[nodiscard]] constexpr auto  cbegin() const -> const_iterator {
         return {m_blocks.data(), 0U};
     }
 
-    [[nodiscard]] constexpr auto end() -> iterator {
+    [[nodiscard]] constexpr auto  end() -> iterator {
         return {m_blocks.data(), m_size};
     }
-    [[nodiscard]] constexpr auto end() const -> const_iterator {
+    [[nodiscard]] constexpr auto  end() const -> const_iterator {
         return {m_blocks.data(), m_size};
     }
-    [[nodiscard]] constexpr auto cend() const -> const_iterator {
+    [[nodiscard]] constexpr auto  cend() const -> const_iterator {
         return {m_blocks.data(), m_size};
     }
 
-    [[nodiscard]] constexpr auto back() -> reference {
+    [[nodiscard]] constexpr auto  back() -> reference {
         return operator[](m_size - 1);
     }
-    [[nodiscard]] constexpr auto back() const -> const_reference {
+    [[nodiscard]] constexpr auto  back() const -> const_reference {
         return operator[](m_size - 1);
     }
 
-    void pop_back() {
+     constexpr void  pop_back() {
         back().~T();
         --m_size;
     }
 
-    [[nodiscard]] auto empty() const {
+    [[nodiscard]]  constexpr auto  empty() const {
         return 0 == m_size;
     }
 
-    void reserve(size_t new_capacity) {
+     constexpr void  reserve(size_t new_capacity) {
         m_blocks.reserve(calc_num_blocks_for_capacity(new_capacity));
         while (new_capacity > capacity()) {
             increase_capacity();
         }
     }
 
-    [[nodiscard]] auto get_allocator() const -> allocator_type {
+    [[nodiscard]]  constexpr auto  get_allocator() const -> allocator_type {
         return allocator_type{m_blocks.get_allocator()};
     }
 
     template <class... Args>
-    auto emplace_back(Args&&... args) -> reference {
+     constexpr auto  emplace_back(Args&&... args) -> reference {
         if (m_size == capacity()) {
             increase_capacity();
         }
@@ -767,7 +767,7 @@ public:
         return ref;
     }
 
-    void clear() {
+     constexpr void  clear() {
         if constexpr (!std::is_trivially_destructible_v<T>) {
             for (size_t i = 0, s = size(); i < s; ++i) {
                 operator[](i).~T();
@@ -776,7 +776,7 @@ public:
         m_size = 0;
     }
 
-    void shrink_to_fit() {
+     constexpr void  shrink_to_fit() {
         auto ba = Allocator(m_blocks.get_allocator());
         auto num_blocks_required = calc_num_blocks_for_capacity(m_size);
         while (m_blocks.size() > num_blocks_required) {
@@ -848,29 +848,29 @@ private:
     KeyEqual m_equal{};
     uint8_t m_shifts = initial_shifts;
 
-    [[nodiscard]] auto next(value_idx_type bucket_idx) const -> value_idx_type {
+    [[nodiscard]]  constexpr auto  next(value_idx_type bucket_idx) const -> value_idx_type {
         return ANKERL_UNORDERED_DENSE_UNLIKELY(bucket_idx + 1U == m_num_buckets)
                    ? 0
                    : static_cast<value_idx_type>(bucket_idx + 1U);
     }
 
     // Helper to access bucket through pointer types
-    [[nodiscard]] static constexpr auto at(bucket_pointer bucket_ptr, size_t offset) -> Bucket& {
+    [[nodiscard]] static constexpr auto  at(bucket_pointer bucket_ptr, size_t offset) -> Bucket& {
         return *(bucket_ptr + static_cast<typename std::allocator_traits<bucket_alloc>::difference_type>(offset));
     }
 
     // use the dist_inc and dist_dec functions so that uint16_t types work without warning
-    [[nodiscard]] static constexpr auto dist_inc(dist_and_fingerprint_type x) -> dist_and_fingerprint_type {
+    [[nodiscard]] static constexpr auto  dist_inc(dist_and_fingerprint_type x) -> dist_and_fingerprint_type {
         return static_cast<dist_and_fingerprint_type>(x + Bucket::dist_inc);
     }
 
-    [[nodiscard]] static constexpr auto dist_dec(dist_and_fingerprint_type x) -> dist_and_fingerprint_type {
+    [[nodiscard]] static constexpr auto  dist_dec(dist_and_fingerprint_type x) -> dist_and_fingerprint_type {
         return static_cast<dist_and_fingerprint_type>(x - Bucket::dist_inc);
     }
 
     // The goal of mixed_hash is to always produce a high quality 64bit hash.
     template <typename K>
-    [[nodiscard]] constexpr auto mixed_hash(K const& key) const -> uint64_t {
+    [[nodiscard]] constexpr auto  mixed_hash(K const& key) const -> uint64_t {
         if constexpr (is_detected_v<detect_avalanching, Hash>) {
             // we know that the hash is good because is_avalanching.
             if constexpr (sizeof(decltype(m_hash(key))) < sizeof(uint64_t)) {
@@ -886,15 +886,15 @@ private:
         }
     }
 
-    [[nodiscard]] constexpr auto dist_and_fingerprint_from_hash(uint64_t hash) const -> dist_and_fingerprint_type {
+    [[nodiscard]] constexpr auto  dist_and_fingerprint_from_hash(uint64_t hash) const -> dist_and_fingerprint_type {
         return Bucket::dist_inc | (static_cast<dist_and_fingerprint_type>(hash) & Bucket::fingerprint_mask);
     }
 
-    [[nodiscard]] constexpr auto bucket_idx_from_hash(uint64_t hash) const -> value_idx_type {
+    [[nodiscard]] constexpr auto  bucket_idx_from_hash(uint64_t hash) const -> value_idx_type {
         return static_cast<value_idx_type>(hash >> m_shifts);
     }
 
-    [[nodiscard]] static constexpr auto get_key(value_type const& vt) -> key_type const& {
+    [[nodiscard]] static constexpr auto  get_key(value_type const& vt) -> key_type const& {
         if constexpr (is_map_v<T>) {
             return vt.first;
         } else {
@@ -903,7 +903,7 @@ private:
     }
 
     template <typename K>
-    [[nodiscard]] auto next_while_less(K const& key) const -> Bucket {
+    [[nodiscard]]  constexpr auto  next_while_less(K const& key) const -> Bucket {
         auto hash = mixed_hash(key);
         auto dist_and_fingerprint = dist_and_fingerprint_from_hash(hash);
         auto bucket_idx = bucket_idx_from_hash(hash);
@@ -915,7 +915,7 @@ private:
         return {dist_and_fingerprint, bucket_idx};
     }
 
-    void place_and_shift_up(Bucket bucket, value_idx_type place) {
+     constexpr void  place_and_shift_up(Bucket bucket, value_idx_type place) {
         while (0 != at(m_buckets, place).m_dist_and_fingerprint) {
             bucket = std::exchange(at(m_buckets, place), bucket);
             bucket.m_dist_and_fingerprint = dist_inc(bucket.m_dist_and_fingerprint);
@@ -924,11 +924,11 @@ private:
         at(m_buckets, place) = bucket;
     }
 
-    [[nodiscard]] static constexpr auto calc_num_buckets(uint8_t shifts) -> size_t {
+    [[nodiscard]] static constexpr auto  calc_num_buckets(uint8_t shifts) -> size_t {
         return (std::min)(max_bucket_count(), size_t{1} << (64U - shifts));
     }
 
-    [[nodiscard]] constexpr auto calc_shifts_for_size(size_t s) const -> uint8_t {
+    [[nodiscard]] constexpr auto  calc_shifts_for_size(size_t s) const -> uint8_t {
         auto shifts = initial_shifts;
         while (shifts > 0 && static_cast<size_t>(static_cast<float>(calc_num_buckets(shifts)) * max_load_factor()) < s) {
             --shifts;
@@ -937,7 +937,7 @@ private:
     }
 
     // assumes m_values has data, m_buckets=m_buckets_end=nullptr, m_shifts is INITIAL_SHIFTS
-    void copy_buckets(table const& other) {
+     constexpr void  copy_buckets(table const& other) {
         // assumes m_values has already the correct data copied over.
         if (empty()) {
             // when empty, at least allocate an initial buckets and clear them.
@@ -953,11 +953,11 @@ private:
     /**
      * True when no element can be added any more without increasing the size
      */
-    [[nodiscard]] auto is_full() const -> bool {
+    [[nodiscard]]  constexpr auto  is_full() const -> bool {
         return size() > m_max_bucket_capacity;
     }
 
-    void deallocate_buckets() {
+     constexpr void  deallocate_buckets() {
         auto ba = bucket_alloc(m_values.get_allocator());
         if (nullptr != m_buckets) {
             bucket_alloc_traits::deallocate(ba, m_buckets, bucket_count());
@@ -967,7 +967,7 @@ private:
         m_max_bucket_capacity = 0;
     }
 
-    void allocate_buckets_from_shift() {
+     constexpr void  allocate_buckets_from_shift() {
         auto ba = bucket_alloc(m_values.get_allocator());
         m_num_buckets = calc_num_buckets(m_shifts);
         m_buckets = bucket_alloc_traits::allocate(ba, m_num_buckets);
@@ -979,13 +979,13 @@ private:
         }
     }
 
-    void clear_buckets() {
+     constexpr void  clear_buckets() {
         if (m_buckets != nullptr) {
             std::memset(&*m_buckets, 0, sizeof(Bucket) * bucket_count());
         }
     }
 
-    void clear_and_fill_buckets_from_values() {
+     constexpr void  clear_and_fill_buckets_from_values() {
         clear_buckets();
         for (value_idx_type value_idx = 0, end_idx = static_cast<value_idx_type>(m_values.size()); value_idx < end_idx;
              ++value_idx) {
@@ -997,7 +997,7 @@ private:
         }
     }
 
-    void increase_size() {
+     constexpr void  increase_size() {
         if (m_max_bucket_capacity == max_bucket_count()) {
             // remove the value again, we can't add it!
             m_values.pop_back();
@@ -1010,7 +1010,7 @@ private:
     }
 
     template <typename Op>
-    void do_erase(value_idx_type bucket_idx, Op handle_erased_value) {
+     constexpr void  do_erase(value_idx_type bucket_idx, Op handle_erased_value) {
         auto const value_idx_to_remove = at(m_buckets, bucket_idx).m_value_idx;
 
         // shift down until either empty or an element with correct spot is found
@@ -1043,7 +1043,7 @@ private:
     }
 
     template <typename K, typename Op>
-    auto do_erase_key(K&& key, Op handle_erased_value) -> size_t {
+     constexpr auto  do_erase_key(K&& key, Op handle_erased_value) -> size_t {
         if (empty()) {
             return 0;
         }
@@ -1064,7 +1064,7 @@ private:
     }
 
     template <class K, class M>
-    auto do_insert_or_assign(K&& key, M&& mapped) -> std::pair<iterator, bool> {
+     constexpr auto  do_insert_or_assign(K&& key, M&& mapped) -> std::pair<iterator, bool> {
         auto it_isinserted = try_emplace(std::forward<K>(key), std::forward<M>(mapped));
         if (!it_isinserted.second) {
             it_isinserted.first->second = std::forward<M>(mapped);
@@ -1073,7 +1073,7 @@ private:
     }
 
     template <typename... Args>
-    auto do_place_element(dist_and_fingerprint_type dist_and_fingerprint, value_idx_type bucket_idx, Args&&... args)
+     constexpr auto  do_place_element(dist_and_fingerprint_type dist_and_fingerprint, value_idx_type bucket_idx, Args&&... args)
         -> std::pair<iterator, bool> {
 
         // emplace the new value. If that throws an exception, no harm done; index is still in a valid state
@@ -1091,7 +1091,7 @@ private:
     }
 
     template <typename K, typename... Args>
-    auto do_try_emplace(K&& key, Args&&... args) -> std::pair<iterator, bool> {
+     constexpr auto  do_try_emplace(K&& key, Args&&... args) -> std::pair<iterator, bool> {
         auto hash = mixed_hash(key);
         auto dist_and_fingerprint = dist_and_fingerprint_from_hash(hash);
         auto bucket_idx = bucket_idx_from_hash(hash);
@@ -1115,7 +1115,7 @@ private:
     }
 
     template <typename K>
-    auto do_find(K const& key) -> iterator {
+     constexpr auto  do_find(K const& key) -> iterator {
         if (ANKERL_UNORDERED_DENSE_UNLIKELY(empty())) {
             return end();
         }
@@ -1155,12 +1155,12 @@ private:
     }
 
     template <typename K>
-    auto do_find(K const& key) const -> const_iterator {
+     constexpr auto  do_find(K const& key) const -> const_iterator {
         return const_cast<table*>(this)->do_find(key); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     }
 
     template <typename K, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto do_at(K const& key) -> Q& {
+     constexpr auto  do_at(K const& key) -> Q& {
         if (auto it = find(key); ANKERL_UNORDERED_DENSE_LIKELY(end() != it)) {
             return it->second;
         }
@@ -1168,7 +1168,7 @@ private:
     }
 
     template <typename K, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto do_at(K const& key) const -> Q const& {
+     constexpr auto  do_at(K const& key) const -> Q const& {
         return const_cast<table*>(this)->at(key); // NOLINT(cppcoreguidelines-pro-type-const-cast)
     }
 
@@ -1315,47 +1315,47 @@ public:
         return *this;
     }
 
-    auto get_allocator() const noexcept -> allocator_type {
+     constexpr auto  get_allocator() const noexcept -> allocator_type {
         return m_values.get_allocator();
     }
 
     // iterators //////////////////////////////////////////////////////////////
 
-    auto begin() noexcept -> iterator {
+     constexpr auto  begin() noexcept -> iterator {
         return m_values.begin();
     }
 
-    auto begin() const noexcept -> const_iterator {
+     constexpr auto  begin() const noexcept -> const_iterator {
         return m_values.begin();
     }
 
-    auto cbegin() const noexcept -> const_iterator {
+     constexpr auto  cbegin() const noexcept -> const_iterator {
         return m_values.cbegin();
     }
 
-    auto end() noexcept -> iterator {
+     constexpr auto  end() noexcept -> iterator {
         return m_values.end();
     }
 
-    auto cend() const noexcept -> const_iterator {
+     constexpr auto  cend() const noexcept -> const_iterator {
         return m_values.cend();
     }
 
-    auto end() const noexcept -> const_iterator {
+     constexpr auto  end() const noexcept -> const_iterator {
         return m_values.end();
     }
 
     // capacity ///////////////////////////////////////////////////////////////
 
-    [[nodiscard]] auto empty() const noexcept -> bool {
+    [[nodiscard]]  constexpr auto  empty() const noexcept -> bool {
         return m_values.empty();
     }
 
-    [[nodiscard]] auto size() const noexcept -> size_t {
+    [[nodiscard]]  constexpr auto  size() const noexcept -> size_t {
         return m_values.size();
     }
 
-    [[nodiscard]] static constexpr auto max_size() noexcept -> size_t {
+    [[nodiscard]] static constexpr auto  max_size() noexcept -> size_t {
         if constexpr ((std::numeric_limits<value_idx_type>::max)() == (std::numeric_limits<size_t>::max)()) {
             return size_t{1} << (sizeof(value_idx_type) * 8 - 1);
         } else {
@@ -1365,58 +1365,58 @@ public:
 
     // modifiers //////////////////////////////////////////////////////////////
 
-    void clear() {
+     constexpr void  clear() {
         m_values.clear();
         clear_buckets();
     }
 
-    auto insert(value_type const& value) -> std::pair<iterator, bool> {
+     constexpr auto  insert(value_type const& value) -> std::pair<iterator, bool> {
         return emplace(value);
     }
 
-    auto insert(value_type&& value) -> std::pair<iterator, bool> {
+     constexpr auto  insert(value_type&& value) -> std::pair<iterator, bool> {
         return emplace(std::move(value));
     }
 
     template <class P, std::enable_if_t<std::is_constructible_v<value_type, P&&>, bool> = true>
-    auto insert(P&& value) -> std::pair<iterator, bool> {
+     constexpr auto  insert(P&& value) -> std::pair<iterator, bool> {
         return emplace(std::forward<P>(value));
     }
 
-    auto insert(const_iterator /*hint*/, value_type const& value) -> iterator {
+     constexpr auto  insert(const_iterator /*hint*/, value_type const& value) -> iterator {
         return insert(value).first;
     }
 
-    auto insert(const_iterator /*hint*/, value_type&& value) -> iterator {
+     constexpr auto  insert(const_iterator /*hint*/, value_type&& value) -> iterator {
         return insert(std::move(value)).first;
     }
 
     template <class P, std::enable_if_t<std::is_constructible_v<value_type, P&&>, bool> = true>
-    auto insert(const_iterator /*hint*/, P&& value) -> iterator {
+     constexpr auto  insert(const_iterator /*hint*/, P&& value) -> iterator {
         return insert(std::forward<P>(value)).first;
     }
 
     template <class InputIt>
-    void insert(InputIt first, InputIt last) {
+     constexpr void  insert(InputIt first, InputIt last) {
         while (first != last) {
             insert(*first);
             ++first;
         }
     }
 
-    void insert(std::initializer_list<value_type> ilist) {
+     constexpr void  insert(std::initializer_list<value_type> ilist) {
         insert(ilist.begin(), ilist.end());
     }
 
     // nonstandard API: *this is emptied.
     // Also see "A Standard flat_map" https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p0429r9.pdf
-    auto extract() && -> value_container_type {
+     constexpr auto  extract() && -> value_container_type {
         return std::move(m_values);
     }
 
     // nonstandard API:
     // Discards the internally held container and replaces it with the one passed. Erases non-unique elements.
-    auto replace(value_container_type&& container) {
+     constexpr auto  replace(value_container_type&& container) {
         if (ANKERL_UNORDERED_DENSE_UNLIKELY(container.size() > max_size())) {
             on_error_too_many_elements();
         }
@@ -1469,12 +1469,12 @@ public:
     }
 
     template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto insert_or_assign(Key const& key, M&& mapped) -> std::pair<iterator, bool> {
+     constexpr auto  insert_or_assign(Key const& key, M&& mapped) -> std::pair<iterator, bool> {
         return do_insert_or_assign(key, std::forward<M>(mapped));
     }
 
     template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto insert_or_assign(Key&& key, M&& mapped) -> std::pair<iterator, bool> {
+     constexpr auto  insert_or_assign(Key&& key, M&& mapped) -> std::pair<iterator, bool> {
         return do_insert_or_assign(std::move(key), std::forward<M>(mapped));
     }
 
@@ -1484,17 +1484,17 @@ public:
               typename H = Hash,
               typename KE = KeyEqual,
               std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
-    auto insert_or_assign(K&& key, M&& mapped) -> std::pair<iterator, bool> {
+     constexpr auto  insert_or_assign(K&& key, M&& mapped) -> std::pair<iterator, bool> {
         return do_insert_or_assign(std::forward<K>(key), std::forward<M>(mapped));
     }
 
     template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto insert_or_assign(const_iterator /*hint*/, Key const& key, M&& mapped) -> iterator {
+     constexpr auto  insert_or_assign(const_iterator /*hint*/, Key const& key, M&& mapped) -> iterator {
         return do_insert_or_assign(key, std::forward<M>(mapped)).first;
     }
 
     template <class M, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto insert_or_assign(const_iterator /*hint*/, Key&& key, M&& mapped) -> iterator {
+     constexpr auto  insert_or_assign(const_iterator /*hint*/, Key&& key, M&& mapped) -> iterator {
         return do_insert_or_assign(std::move(key), std::forward<M>(mapped)).first;
     }
 
@@ -1504,7 +1504,7 @@ public:
               typename H = Hash,
               typename KE = KeyEqual,
               std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
-    auto insert_or_assign(const_iterator /*hint*/, K&& key, M&& mapped) -> iterator {
+     constexpr auto  insert_or_assign(const_iterator /*hint*/, K&& key, M&& mapped) -> iterator {
         return do_insert_or_assign(std::forward<K>(key), std::forward<M>(mapped)).first;
     }
 
@@ -1514,7 +1514,7 @@ public:
               typename H = Hash,
               typename KE = KeyEqual,
               std::enable_if_t<!is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
-    auto emplace(K&& key) -> std::pair<iterator, bool> {
+     constexpr auto  emplace(K&& key) -> std::pair<iterator, bool> {
         auto hash = mixed_hash(key);
         auto dist_and_fingerprint = dist_and_fingerprint_from_hash(hash);
         auto bucket_idx = bucket_idx_from_hash(hash);
@@ -1534,7 +1534,7 @@ public:
     }
 
     template <class... Args>
-    auto emplace(Args&&... args) -> std::pair<iterator, bool> {
+     constexpr auto  emplace(Args&&... args) -> std::pair<iterator, bool> {
         // we have to instantiate the value_type to be able to access the key.
         // 1. emplace_back the object so it is constructed. 2. If the key is already there, pop it later in the loop.
         auto& key = get_key(m_values.emplace_back(std::forward<Args>(args)...));
@@ -1565,27 +1565,27 @@ public:
     }
 
     template <class... Args>
-    auto emplace_hint(const_iterator /*hint*/, Args&&... args) -> iterator {
+     constexpr auto  emplace_hint(const_iterator /*hint*/, Args&&... args) -> iterator {
         return emplace(std::forward<Args>(args)...).first;
     }
 
     template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto try_emplace(Key const& key, Args&&... args) -> std::pair<iterator, bool> {
+     constexpr auto  try_emplace(Key const& key, Args&&... args) -> std::pair<iterator, bool> {
         return do_try_emplace(key, std::forward<Args>(args)...);
     }
 
     template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto try_emplace(Key&& key, Args&&... args) -> std::pair<iterator, bool> {
+     constexpr auto  try_emplace(Key&& key, Args&&... args) -> std::pair<iterator, bool> {
         return do_try_emplace(std::move(key), std::forward<Args>(args)...);
     }
 
     template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto try_emplace(const_iterator /*hint*/, Key const& key, Args&&... args) -> iterator {
+     constexpr auto  try_emplace(const_iterator /*hint*/, Key const& key, Args&&... args) -> iterator {
         return do_try_emplace(key, std::forward<Args>(args)...).first;
     }
 
     template <class... Args, typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto try_emplace(const_iterator /*hint*/, Key&& key, Args&&... args) -> iterator {
+     constexpr auto  try_emplace(const_iterator /*hint*/, Key&& key, Args&&... args) -> iterator {
         return do_try_emplace(std::move(key), std::forward<Args>(args)...).first;
     }
 
@@ -1597,7 +1597,7 @@ public:
         typename KE = KeyEqual,
         std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE> && is_neither_convertible_v<K&&, iterator, const_iterator>,
                          bool> = true>
-    auto try_emplace(K&& key, Args&&... args) -> std::pair<iterator, bool> {
+     constexpr auto  try_emplace(K&& key, Args&&... args) -> std::pair<iterator, bool> {
         return do_try_emplace(std::forward<K>(key), std::forward<Args>(args)...);
     }
 
@@ -1609,11 +1609,11 @@ public:
         typename KE = KeyEqual,
         std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE> && is_neither_convertible_v<K&&, iterator, const_iterator>,
                          bool> = true>
-    auto try_emplace(const_iterator /*hint*/, K&& key, Args&&... args) -> iterator {
+     constexpr auto  try_emplace(const_iterator /*hint*/, K&& key, Args&&... args) -> iterator {
         return do_try_emplace(std::forward<K>(key), std::forward<Args>(args)...).first;
     }
 
-    auto erase(iterator it) -> iterator {
+     constexpr auto  erase(iterator it) -> iterator {
         auto hash = mixed_hash(get_key(*it));
         auto bucket_idx = bucket_idx_from_hash(hash);
 
@@ -1627,7 +1627,7 @@ public:
         return begin() + static_cast<difference_type>(value_idx_to_remove);
     }
 
-    auto extract(iterator it) -> value_type {
+     constexpr auto  extract(iterator it) -> value_type {
         auto hash = mixed_hash(get_key(*it));
         auto bucket_idx = bucket_idx_from_hash(hash);
 
@@ -1644,16 +1644,16 @@ public:
     }
 
     template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto erase(const_iterator it) -> iterator {
+     constexpr auto  erase(const_iterator it) -> iterator {
         return erase(begin() + (it - cbegin()));
     }
 
     template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto extract(const_iterator it) -> value_type {
+     constexpr auto  extract(const_iterator it) -> value_type {
         return extract(begin() + (it - cbegin()));
     }
 
-    auto erase(const_iterator first, const_iterator last) -> iterator {
+     constexpr auto  erase(const_iterator first, const_iterator last) -> iterator {
         auto const idx_first = first - cbegin();
         auto const idx_last = last - cbegin();
         auto const first_to_last = std::distance(first, last);
@@ -1677,12 +1677,12 @@ public:
         return begin() + idx_first;
     }
 
-    auto erase(Key const& key) -> size_t {
+     constexpr auto  erase(Key const& key) -> size_t {
         return do_erase_key(key, [](value_type&& /*unused*/) {
         });
     }
 
-    auto extract(Key const& key) -> std::optional<value_type> {
+     constexpr auto  extract(Key const& key) -> std::optional<value_type> {
         auto tmp = std::optional<value_type>{};
         do_erase_key(key, [&tmp](value_type&& val) {
             tmp = std::move(val);
@@ -1691,13 +1691,13 @@ public:
     }
 
     template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto erase(K&& key) -> size_t {
+     constexpr auto  erase(K&& key) -> size_t {
         return do_erase_key(std::forward<K>(key), [](value_type&& /*unused*/) {
         });
     }
 
     template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto extract(K&& key) -> std::optional<value_type> {
+     constexpr auto  extract(K&& key) -> std::optional<value_type> {
         auto tmp = std::optional<value_type>{};
         do_erase_key(std::forward<K>(key), [&tmp](value_type&& val) {
             tmp = std::move(val);
@@ -1705,7 +1705,7 @@ public:
         return tmp;
     }
 
-    void swap(table& other) noexcept(noexcept(std::is_nothrow_swappable_v<value_container_type> &&
+     constexpr void  swap(table& other) noexcept(noexcept(std::is_nothrow_swappable_v<value_container_type> &&
                                               std::is_nothrow_swappable_v<Hash> && std::is_nothrow_swappable_v<KeyEqual>)) {
         using std::swap;
         swap(other, *this);
@@ -1714,7 +1714,7 @@ public:
     // lookup /////////////////////////////////////////////////////////////////
 
     template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto at(key_type const& key) -> Q& {
+     constexpr auto  at(key_type const& key) -> Q& {
         return do_at(key);
     }
 
@@ -1723,12 +1723,12 @@ public:
               typename H = Hash,
               typename KE = KeyEqual,
               std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
-    auto at(K const& key) -> Q& {
+     constexpr auto  at(K const& key) -> Q& {
         return do_at(key);
     }
 
     template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto at(key_type const& key) const -> Q const& {
+     constexpr auto  at(key_type const& key) const -> Q const& {
         return do_at(key);
     }
 
@@ -1737,17 +1737,17 @@ public:
               typename H = Hash,
               typename KE = KeyEqual,
               std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
-    auto at(K const& key) const -> Q const& {
+     constexpr auto  at(K const& key) const -> Q const& {
         return do_at(key);
     }
 
     template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto operator[](Key const& key) -> Q& {
+     constexpr auto  operator[](Key const& key) -> Q& {
         return try_emplace(key).first->second;
     }
 
     template <typename Q = T, std::enable_if_t<is_map_v<Q>, bool> = true>
-    auto operator[](Key&& key) -> Q& {
+     constexpr auto  operator[](Key&& key) -> Q& {
         return try_emplace(std::move(key)).first->second;
     }
 
@@ -1756,96 +1756,96 @@ public:
               typename H = Hash,
               typename KE = KeyEqual,
               std::enable_if_t<is_map_v<Q> && is_transparent_v<H, KE>, bool> = true>
-    auto operator[](K&& key) -> Q& {
+     constexpr auto  operator[](K&& key) -> Q& {
         return try_emplace(std::forward<K>(key)).first->second;
     }
 
-    auto count(Key const& key) const -> size_t {
+     constexpr auto  count(Key const& key) const -> size_t {
         return find(key) == end() ? 0 : 1;
     }
 
     template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto count(K const& key) const -> size_t {
+     constexpr auto  count(K const& key) const -> size_t {
         return find(key) == end() ? 0 : 1;
     }
 
-    auto find(Key const& key) -> iterator {
+     constexpr auto  find(Key const& key) -> iterator {
         return do_find(key);
     }
 
-    auto find(Key const& key) const -> const_iterator {
-        return do_find(key);
-    }
-
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto find(K const& key) -> iterator {
+     constexpr auto  find(Key const& key) const -> const_iterator {
         return do_find(key);
     }
 
     template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto find(K const& key) const -> const_iterator {
+     constexpr auto  find(K const& key) -> iterator {
         return do_find(key);
     }
 
-    auto contains(Key const& key) const -> bool {
+    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+     constexpr auto  find(K const& key) const -> const_iterator {
+        return do_find(key);
+    }
+
+     constexpr auto  contains(Key const& key) const -> bool {
         return find(key) != end();
     }
 
     template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto contains(K const& key) const -> bool {
+     constexpr auto  contains(K const& key) const -> bool {
         return find(key) != end();
     }
 
-    auto equal_range(Key const& key) -> std::pair<iterator, iterator> {
+     constexpr auto  equal_range(Key const& key) -> std::pair<iterator, iterator> {
         auto it = do_find(key);
         return {it, it == end() ? end() : it + 1};
     }
 
-    auto equal_range(const Key& key) const -> std::pair<const_iterator, const_iterator> {
-        auto it = do_find(key);
-        return {it, it == end() ? end() : it + 1};
-    }
-
-    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto equal_range(K const& key) -> std::pair<iterator, iterator> {
+     constexpr auto  equal_range(const Key& key) const -> std::pair<const_iterator, const_iterator> {
         auto it = do_find(key);
         return {it, it == end() ? end() : it + 1};
     }
 
     template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
-    auto equal_range(K const& key) const -> std::pair<const_iterator, const_iterator> {
+     constexpr auto  equal_range(K const& key) -> std::pair<iterator, iterator> {
+        auto it = do_find(key);
+        return {it, it == end() ? end() : it + 1};
+    }
+
+    template <class K, class H = Hash, class KE = KeyEqual, std::enable_if_t<is_transparent_v<H, KE>, bool> = true>
+     constexpr auto  equal_range(K const& key) const -> std::pair<const_iterator, const_iterator> {
         auto it = do_find(key);
         return {it, it == end() ? end() : it + 1};
     }
 
     // bucket interface ///////////////////////////////////////////////////////
 
-    auto bucket_count() const noexcept -> size_t { // NOLINT(modernize-use-nodiscard)
+     constexpr auto  bucket_count() const noexcept -> size_t { // NOLINT(modernize-use-nodiscard)
         return m_num_buckets;
     }
 
-    static constexpr auto max_bucket_count() noexcept -> size_t { // NOLINT(modernize-use-nodiscard)
+    static constexpr auto  max_bucket_count() noexcept -> size_t { // NOLINT(modernize-use-nodiscard)
         return max_size();
     }
 
     // hash policy ////////////////////////////////////////////////////////////
 
-    [[nodiscard]] auto load_factor() const -> float {
+    [[nodiscard]]  constexpr auto  load_factor() const -> float {
         return bucket_count() ? static_cast<float>(size()) / static_cast<float>(bucket_count()) : 0.0F;
     }
 
-    [[nodiscard]] auto max_load_factor() const -> float {
+    [[nodiscard]]  constexpr auto  max_load_factor() const -> float {
         return m_max_load_factor;
     }
 
-    void max_load_factor(float ml) {
+     constexpr void  max_load_factor(float ml) {
         m_max_load_factor = ml;
         if (m_num_buckets != max_bucket_count()) {
             m_max_bucket_capacity = static_cast<value_idx_type>(static_cast<float>(bucket_count()) * max_load_factor());
         }
     }
 
-    void rehash(size_t count) {
+     constexpr void  rehash(size_t count) {
         count = (std::min)(count, max_size());
         auto shifts = calc_shifts_for_size((std::max)(count, size()));
         if (shifts != m_shifts) {
@@ -1857,7 +1857,7 @@ public:
         }
     }
 
-    void reserve(size_t capa) {
+     constexpr void  reserve(size_t capa) {
         capa = (std::min)(capa, max_size());
         if constexpr (has_reserve<value_container_type>) {
             // std::deque doesn't have reserve(). Make sure we only call when available
@@ -1874,16 +1874,16 @@ public:
 
     // observers //////////////////////////////////////////////////////////////
 
-    auto hash_function() const -> hasher {
+     constexpr auto  hash_function() const -> hasher {
         return m_hash;
     }
 
-    auto key_eq() const -> key_equal {
+     constexpr auto  key_eq() const -> key_equal {
         return m_equal;
     }
 
     // nonstandard API: expose the underlying values container
-    [[nodiscard]] auto values() const noexcept -> value_container_type const& {
+    [[nodiscard]]  constexpr auto  values() const noexcept -> value_container_type const& {
         return m_values;
     }
 
@@ -2008,7 +2008,7 @@ ANKERL_UNORDERED_DENSE_EXPORT template <class Key,
                                         class Pred,
                                         bool IsSegmented>
 // NOLINTNEXTLINE(cert-dcl58-cpp)
-auto erase_if(ankerl::unordered_dense::detail::table<Key, T, Hash, KeyEqual, AllocatorOrContainer, Bucket, IsSegmented>& map,
+ constexpr auto   erase_if(ankerl::unordered_dense::detail::table<Key, T, Hash, KeyEqual, AllocatorOrContainer, Bucket, IsSegmented>& map,
               Pred pred) -> size_t {
     using map_t = ankerl::unordered_dense::detail::table<Key, T, Hash, KeyEqual, AllocatorOrContainer, Bucket, IsSegmented>;
 
