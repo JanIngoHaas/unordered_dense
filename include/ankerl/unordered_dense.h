@@ -334,7 +334,7 @@ struct tuple_hash_helper {
     // Converts the value into 64bit. If it is an integral type, just cast it. Mixing is doing the rest.
     // If it isn't an integral we need to hash it.
     template <typename Arg>
-    [[nodiscard]] constexpr static  constexpr auto  to64(Arg const& arg) -> uint64_t {
+    [[nodiscard]] constexpr static auto  to64(Arg const& arg) -> uint64_t {
         if constexpr (std::is_integral_v<Arg> || std::is_enum_v<Arg>) {
             return static_cast<uint64_t>(arg);
         } else {
@@ -641,26 +641,26 @@ private:
     }
 
 public:
-    segmented_vector() = default;
+    constexpr segmented_vector() = default;
 
     // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
-    segmented_vector(Allocator alloc)
+    constexpr segmented_vector(Allocator alloc)
         : m_blocks(vec_alloc(alloc)) {}
 
-    segmented_vector(segmented_vector&& other, Allocator alloc)
+    constexpr segmented_vector(segmented_vector&& other, Allocator alloc)
         : segmented_vector(alloc) {
         *this = std::move(other);
     }
 
-    segmented_vector(segmented_vector const& other, Allocator alloc)
+    constexpr segmented_vector(segmented_vector const& other, Allocator alloc)
         : m_blocks(vec_alloc(alloc)) {
         append_everything_from(other);
     }
 
-    segmented_vector(segmented_vector&& other) noexcept
+    constexpr segmented_vector(segmented_vector&& other) noexcept
         : segmented_vector(std::move(other), get_allocator()) {}
 
-    segmented_vector(segmented_vector const& other) {
+    constexpr segmented_vector(segmented_vector const& other) {
         append_everything_from(other);
     }
 
@@ -687,7 +687,7 @@ public:
         return *this;
     }
 
-    ~segmented_vector() {
+    constexpr ~segmented_vector() {
         clear();
         dealloc();
     }
@@ -1188,20 +1188,20 @@ public:
         }
     }
 
-    table()
+    constexpr table()
         : table(0) {}
 
-    table(size_t bucket_count, allocator_type const& alloc)
+    constexpr table(size_t bucket_count, allocator_type const& alloc)
         : table(bucket_count, Hash(), KeyEqual(), alloc) {}
 
-    table(size_t bucket_count, Hash const& hash, allocator_type const& alloc)
+    constexpr table(size_t bucket_count, Hash const& hash, allocator_type const& alloc)
         : table(bucket_count, hash, KeyEqual(), alloc) {}
 
-    explicit table(allocator_type const& alloc)
+    explicit constexpr table(allocator_type const& alloc)
         : table(0, Hash(), KeyEqual(), alloc) {}
 
     template <class InputIt>
-    table(InputIt first,
+    constexpr table(InputIt first,
           InputIt last,
           size_type bucket_count = 0,
           Hash const& hash = Hash(),
@@ -1212,17 +1212,17 @@ public:
     }
 
     template <class InputIt>
-    table(InputIt first, InputIt last, size_type bucket_count, allocator_type const& alloc)
+    constexpr table(InputIt first, InputIt last, size_type bucket_count, allocator_type const& alloc)
         : table(first, last, bucket_count, Hash(), KeyEqual(), alloc) {}
 
     template <class InputIt>
-    table(InputIt first, InputIt last, size_type bucket_count, Hash const& hash, allocator_type const& alloc)
+    constexpr table(InputIt first, InputIt last, size_type bucket_count, Hash const& hash, allocator_type const& alloc)
         : table(first, last, bucket_count, hash, KeyEqual(), alloc) {}
 
-    table(table const& other)
+    constexpr table(table const& other)
         : table(other, other.m_values.get_allocator()) {}
 
-    table(table const& other, allocator_type const& alloc)
+    constexpr table(table const& other, allocator_type const& alloc)
         : m_values(other.m_values, alloc)
         , m_max_load_factor(other.m_max_load_factor)
         , m_hash(other.m_hash)
@@ -1230,15 +1230,15 @@ public:
         copy_buckets(other);
     }
 
-    table(table&& other) noexcept
+    constexpr table(table&& other) noexcept
         : table(std::move(other), other.m_values.get_allocator()) {}
 
-    table(table&& other, allocator_type const& alloc) noexcept
+    constexpr table(table&& other, allocator_type const& alloc) noexcept
         : m_values(alloc) {
         *this = std::move(other);
     }
 
-    table(std::initializer_list<value_type> ilist,
+    constexpr table(std::initializer_list<value_type> ilist,
           size_t bucket_count = 0,
           Hash const& hash = Hash(),
           KeyEqual const& equal = KeyEqual(),
@@ -1247,10 +1247,10 @@ public:
         insert(ilist);
     }
 
-    table(std::initializer_list<value_type> ilist, size_type bucket_count, allocator_type const& alloc)
+    constexpr table(std::initializer_list<value_type> ilist, size_type bucket_count, allocator_type const& alloc)
         : table(ilist, bucket_count, Hash(), KeyEqual(), alloc) {}
 
-    table(std::initializer_list<value_type> init, size_type bucket_count, Hash const& hash, allocator_type const& alloc)
+    constexpr table(std::initializer_list<value_type> init, size_type bucket_count, Hash const& hash, allocator_type const& alloc)
         : table(init, bucket_count, hash, KeyEqual(), alloc) {}
 
     ~table() {
@@ -1889,7 +1889,7 @@ public:
 
     // non-member functions ///////////////////////////////////////////////////
 
-    friend auto operator==(table const& a, table const& b) -> bool {
+    constexpr friend auto operator==(table const& a, table const& b) -> bool {
         if (&a == &b) {
             return true;
         }
@@ -1913,7 +1913,7 @@ public:
         return true;
     }
 
-    friend auto operator!=(table const& a, table const& b) -> bool {
+    constexpr friend auto operator!=(table const& a, table const& b) -> bool {
         return !(a == b);
     }
 };
