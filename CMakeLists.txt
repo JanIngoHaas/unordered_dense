@@ -22,7 +22,7 @@ target_include_directories(
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-target_compile_features(unordered_dense INTERFACE cxx_std_17)
+target_compile_features(unordered_dense INTERFACE cxx_std_20)
 
 if(_unordered_dense_is_toplevel_project)
     # locations are provided by GNUInstallDirs
