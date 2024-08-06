@@ -21,7 +21,7 @@ project('unordered_dense', 'cpp',
     version: '4.4.0',
     license: 'MIT',
     default_options : [
-        'cpp_std=c++17', 
+        'cpp_std=c++20', 
         'warning_level=3',
         'werror=true', 
         'b_ndebug=true', # otherwise absl is really slow!
